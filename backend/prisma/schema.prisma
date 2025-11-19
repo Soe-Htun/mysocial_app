@@ -1,0 +1,105 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum ReactionType {
+  LIKE
+  LOVE
+  CARE
+  HAHA
+  WOW
+  ANGRY
+  CELEBRATE
+}
+
+enum NotificationType {
+  REACTION
+  COMMENT
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  name         String
+  email        String        @unique
+  passwordHash String
+  headline     String?
+  avatarUrl    String?
+  coverUrl     String?       @db.LongText
+  location     String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  posts         Post[]
+  comments      Comment[]
+  reactions     Reaction[]
+  notifications Notification[] @relation("NotificationRecipient")
+  triggeredNotifs Notification[] @relation("NotificationActor")
+  sentMessages  Message[]    @relation("SentMessages")
+  receivedMsgs  Message[]    @relation("ReceivedMessages")
+}
+
+model Post {
+  id        Int        @id @default(autoincrement())
+  content   String
+  mediaUrl  String?    @db.LongText
+  authorId  Int
+  author    User       @relation(fields: [authorId], references: [id])
+  comments  Comment[]
+  reactions Reaction[]
+  notifications Notification[] @relation("NotificationPost")
+  createdAt DateTime   @default(now())
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  content   String
+  postId    Int
+  authorId  Int
+  post      Post     @relation(fields: [postId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+  notifications Notification[] @relation("NotificationComment")
+  createdAt DateTime @default(now())
+}
+
+model Reaction {
+  id        Int          @id @default(autoincrement())
+  type      ReactionType @default(LIKE)
+  userId    Int
+  postId    Int
+  user      User         @relation(fields: [userId], references: [id])
+  post      Post         @relation(fields: [postId], references: [id])
+  createdAt DateTime     @default(now())
+
+  @@unique([userId, postId])
+}
+
+model Notification {
+  id        Int               @id @default(autoincrement())
+  message   String
+  type      NotificationType  @default(COMMENT)
+  userId    Int
+  actorId   Int?
+  postId    Int?
+  commentId Int?
+  read      Boolean           @default(false)
+  user      User              @relation("NotificationRecipient", fields: [userId], references: [id], onDelete: Cascade)
+  actor     User?             @relation("NotificationActor", fields: [actorId], references: [id], onDelete: SetNull)
+  post      Post?             @relation("NotificationPost", fields: [postId], references: [id], onDelete: Cascade)
+  comment   Comment?          @relation("NotificationComment", fields: [commentId], references: [id], onDelete: Cascade)
+  createdAt DateTime          @default(now())
+}
+
+model Message {
+  id          Int      @id @default(autoincrement())
+  body        String
+  senderId    Int
+  recipientId Int
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  createdAt   DateTime @default(now())
+}
