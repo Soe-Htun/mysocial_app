@@ -1,6 +1,16 @@
 import { useMemo } from 'react'
+import { X, Volume2 } from 'lucide-react'
 
-export default function StoryViewer({ story, onClose, onReact }) {
+export default function StoryViewer({
+  story,
+  onClose,
+  onReact,
+  canViewInsights,
+  onNext,
+  onPrev,
+  hasNext,
+  hasPrev,
+}) {
   const reactionCounts = useMemo(() => {
     const map = new Map()
     story.reactions?.forEach((item) => {
@@ -10,58 +20,98 @@ export default function StoryViewer({ story, onClose, onReact }) {
   }, [story.reactions])
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl h-[80vh] flex flex-col overflow-hidden"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
-          <div>
-            <p className="text-sm font-medium text-slate-900">{story.user?.name}</p>
-            <p className="text-xs text-slate-400">
-              {new Date(story.createdAt).toLocaleString([], { hour: '2-digit', minute: '2-digit' })}
-            </p>
-          </div>
-          <button className="text-sm text-slate-500 hover:text-slate-700" onClick={onClose}>
-            Close
-          </button>
-        </div>
-        <div className="flex-1 flex flex-col md:flex-row">
-          <div className="flex-1 bg-slate-900 flex items-center justify-center">
-            {story.media ? (
-              <img src={story.media} alt={story.caption} className="max-h-full max-w-full object-contain" />
-            ) : (
-              <p className="text-white text-center px-6">{story.caption}</p>
-            )}
-          </div>
-          <div className="w-full md:w-64 border-t md:border-l border-slate-100 p-4 space-y-4 overflow-y-auto">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Views ({story.views?.length || 0})</p>
-              <ul className="mt-2 space-y-2 text-sm text-slate-600">
-                {story.views?.map((viewer) => (
-                  <li key={viewer.id}>{viewer.name}</li>
-                ))}
-                {!story.views?.length && <li className="text-slate-400">No viewers yet.</li>}
-              </ul>
-            </div>
-            <div>
-              <p className="text-sm font-semibold text-slate-900">Reactions</p>
-              <div className="mt-2 flex flex-wrap gap-2 text-sm">
-                {reactionCounts.length === 0 && <span className="text-slate-400">No reactions yet.</span>}
-                {reactionCounts.map(([emoji, count]) => (
-                  <span key={emoji} className="px-2 py-1 rounded-full bg-slate-100">
-                    {emoji} {count}
-                  </span>
-                ))}
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm" onClick={onClose}>
+      <div className="relative mx-auto flex h-full w-full max-w-4xl items-center justify-center px-4">
+        <div
+          className="relative flex h-[85vh] w-full max-w-xl flex-col overflow-hidden rounded-[32px] bg-slate-900 text-white shadow-2xl"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center gap-3">
+              <img
+                src={
+                  story.user?.avatar ||
+                  `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(story.user?.name || 'Story')}`
+                }
+                alt={story.user?.name}
+                className="h-12 w-12 rounded-full border-2 border-white/40 object-cover"
+              />
+              <div>
+                <p className="text-sm font-semibold leading-tight">{story.user?.name}</p>
+                <p className="text-xs text-white/70">
+                  {new Date(story.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </p>
               </div>
-              <div className="mt-3 flex gap-2">
-                {['👍', '❤️', '🔥'].map((emoji) => (
+            </div>
+            <div className="flex items-center gap-3">
+              <button type="button" className="rounded-full bg-white/10 p-2 hover:bg-white/20">
+                <Volume2 className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                className="rounded-full bg-white/10 p-2 hover:bg-white/20"
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onClose()
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="relative flex-1 bg-black/60">
+            {story.media ? (
+              <img src={story.media} alt={story.caption} className="h-full w-full object-contain" />
+            ) : (
+              <div className="flex h-full items-center justify-center px-6 text-center text-lg font-semibold">
+                {story.caption || 'Shared an update'}
+              </div>
+            )}
+            <button
+              type="button"
+              className="absolute inset-y-0 left-0 w-1/3 focus-visible:outline-none"
+              onClick={(event) => {
+                event.stopPropagation()
+                if (hasPrev) onPrev?.()
+              }}
+              aria-label="Previous story"
+            />
+            <button
+              type="button"
+              className="absolute inset-y-0 right-0 w-1/3 focus-visible:outline-none"
+              onClick={(event) => {
+                event.stopPropagation()
+                if (hasNext) {
+                  onNext?.()
+                } else {
+                  onClose()
+                }
+              }}
+              aria-label="Next story"
+            />
+          </div>
+
+          <div className="space-y-4 px-6 py-4">
+            {story.caption && <p className="text-sm text-white/90">{story.caption}</p>}
+            <div className="flex flex-wrap gap-2 text-sm">
+              <div className="flex items-center gap-2 rounded-full bg-white/10 px-3 py-1">
+                {reactionCounts.length === 0 ? (
+                  <span className="text-white/70">No reactions yet</span>
+                ) : (
+                  reactionCounts.map(([emoji, count]) => (
+                    <span key={emoji} className="flex items-center gap-1">
+                      {emoji}
+                      <span className="text-xs text-white/80">{count}</span>
+                    </span>
+                  ))
+                )}
+              </div>
+              <div className="ml-auto flex gap-2">
+                {['👍', '❤️', '🔥', '👏'].map((emoji) => (
                   <button
                     key={emoji}
-                    className="px-3 py-1 rounded-full border border-slate-200 text-sm"
+                    className="rounded-full bg-white/15 px-3 py-1 text-sm font-semibold text-white backdrop-blur hover:bg-white/30"
                     onClick={() => onReact(emoji)}
                   >
                     {emoji}
@@ -69,11 +119,26 @@ export default function StoryViewer({ story, onClose, onReact }) {
                 ))}
               </div>
             </div>
+            {canViewInsights ? (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm leading-relaxed">
+                <p className="font-semibold text-white">Viewers · {story.views?.length || 0}</p>
+                <div className="mt-2 flex flex-wrap gap-2 text-white/80">
+                  {story.views?.length
+                    ? story.views.slice(0, 6).map((viewer) => (
+                        <span key={viewer.id} className="rounded-full bg-white/10 px-3 py-1 text-xs">
+                          {viewer.name}
+                        </span>
+                      ))
+                    : 'No viewers yet.'}
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-3 text-xs text-white/70">
+                Only you can see viewers for your own stories.
+              </div>
+            )}
           </div>
         </div>
-        {story.caption && (
-          <div className="px-6 py-4 border-t border-slate-100 text-sm text-slate-700">{story.caption}</div>
-        )}
       </div>
     </div>
   )

@@ -3,16 +3,26 @@ import { Bell, Menu, Search, User, X } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../providers/AuthProvider'
 import { useSocialStore } from '../../store/useSocialStore'
+import { ConfirmDialog } from '../ui/ConfirmDialog'
 
 export default function TopBar() {
   const { user, logout } = useAuth()
   const [showMenu, setShowMenu] = useState(false)
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
+  const [confirmLogoutOpen, setConfirmLogoutOpen] = useState(false)
   const postSearchTerm = useSocialStore((state) => state.postSearchTerm)
   const setPostSearchTerm = useSocialStore((state) => state.setPostSearchTerm)
 
+  const handleConfirmLogout = () => {
+    logout()
+    setConfirmLogoutOpen(false)
+    setShowMenu(false)
+    setMobileNavOpen(false)
+  }
+
   return (
-    <header className="bg-white border-b border-slate-100 sticky top-0 z-40">
+    <>
+      <header className="bg-white border-b border-slate-100 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 py-4 flex items-center gap-4">
         <Link to="/" className="text-xl font-semibold text-brand-600">
           SocialSphere
@@ -55,9 +65,7 @@ export default function TopBar() {
                 <button
                   className="w-full text-left rounded-xl px-3 py-2 text-rose-600 hover:bg-rose-50"
                   onClick={() => {
-                    if (window.confirm('Are you sure you want to log out?')) {
-                      logout()
-                    }
+                    setConfirmLogoutOpen(true)
                   }}
                 >
                   Log out
@@ -114,18 +122,22 @@ export default function TopBar() {
             </Link>
             <button
               className="w-full text-left text-lg font-medium text-rose-600"
-              onClick={() => {
-                if (window.confirm('Are you sure you want to log out?')) {
-                  logout()
-                  setMobileNavOpen(false)
-                }
-              }}
+              onClick={() => setConfirmLogoutOpen(true)}
             >
               Log out
             </button>
           </nav>
         </div>
       )}
-    </header>
+      </header>
+      <ConfirmDialog
+        open={confirmLogoutOpen}
+        title="Log out?"
+        message="You'll need to sign back in to continue collaborating."
+        confirmLabel="Log out"
+        onConfirm={handleConfirmLogout}
+        onCancel={() => setConfirmLogoutOpen(false)}
+      />
+    </>
   )
 }

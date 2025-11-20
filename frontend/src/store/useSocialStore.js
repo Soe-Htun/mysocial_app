@@ -424,6 +424,29 @@ export const useSocialStore = create((set, get) => ({
     }))
   },
 
+  createStory: ({ user, media, caption }) => {
+    if (!user?.id || (!media && !caption?.trim())) return
+    const newStory = {
+      id: newId(),
+      user: {
+        id: user.id,
+        name: user.name || 'You',
+        avatar:
+          user.avatar ||
+          `https://api.dicebear.com/8.x/initials/svg?seed=${encodeURIComponent(user.name || 'You')}`,
+      },
+      media: media || null,
+      caption: caption?.trim() || '',
+      createdAt: new Date().toISOString(),
+      views: [],
+      reactions: [],
+    }
+    set((state) => {
+      const withoutExisting = state.stories.filter((story) => story.user?.id !== user.id)
+      return { stories: [newStory, ...withoutExisting] }
+    })
+  },
+
   reactToStory: (storyId, viewer, reaction) => {
     if (!viewer?.id) return
     set((state) => ({
